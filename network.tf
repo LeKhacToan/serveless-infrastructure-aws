@@ -64,28 +64,45 @@ resource "aws_internet_gateway" "internet_gw" {
   }
 }
 
-resource "aws_route_table" "route_table" {
+resource "aws_route_table" "private_route_table" {
   vpc_id = aws_vpc.pro_vpc.id
 
+  route {
+    cidr_block = "0.0.0.0/0"
+    gateway_id = aws_nat_gateway.nat_gw.id
+  }
+
+  tags = {
+    Name = "Private route table for vpc"
+  }
+}
+
+resource "aws_route_table" "public_route_table" {
+  vpc_id = aws_vpc.pro_vpc.id
   route {
     cidr_block = "0.0.0.0/0"
     gateway_id = aws_internet_gateway.internet_gw.id
   }
 
   tags = {
-    Name = "Route table for vpc"
+    Name = "Public route table for vpc"
   }
 }
 
 # Associate subnet with route table
 resource "aws_route_table_association" "a" {
   subnet_id      = aws_subnet.private_sn_1.id
-  route_table_id = aws_route_table.route_table.id
+  route_table_id = aws_route_table.private_route_table.id
 }
 
 resource "aws_route_table_association" "b" {
   subnet_id      = aws_subnet.private_sn_2.id
-  route_table_id = aws_route_table.route_table.id
+  route_table_id = aws_route_table.private_route_table.id
+}
+
+resource "aws_route_table_association" "a" {
+  subnet_id      = aws_subnet.public_sn.id
+  route_table_id = aws_route_table.public_route_table.id
 }
 
 # create security group
