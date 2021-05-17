@@ -1,7 +1,16 @@
 resource "aws_vpc" "pro_vpc" {
   cidr_block = "10.0.0.0/16"
+  enable_dns_hostnames = true
   tags = {
     Name = "production vpc"
+  }
+}
+
+resource "aws_internet_gateway" "internet_gw" {
+  vpc_id = aws_vpc.pro_vpc.id
+
+  tags = {
+    Name = "Internet gateway"
   }
 }
 
@@ -34,10 +43,13 @@ resource "aws_subnet" "private_sn_2" {
   }
 }
 
+resource "aws_eip" "nat" {
+  depends_on = [aws_internet_gateway.internet_gw]
+}
 
 resource "aws_nat_gateway" "nat_gw" {
   subnet_id = aws_subnet.public_sn.id
-
+  allocation_id = aws_eip.nat.id
   tags = {
     Name = "Nat gateway"
   }
@@ -51,17 +63,9 @@ resource "aws_db_subnet_group" "db_sn_group" {
   }
 }
 
-resource "aws_elasticache_subnet_group" "elasticache_sg" {
-  name       = "elasticache subnet group"
+resource "aws_elasticache_subnet_group" "redis_sg" {
+  name       = "elasticache-sg"
   subnet_ids = [aws_subnet.private_sn_1.id, aws_subnet.private_sn_2.id]
-}
-
-resource "aws_internet_gateway" "internet_gw" {
-  vpc_id = aws_vpc.pro_vpc.id
-
-  tags = {
-    Name = "Internet gateway"
-  }
 }
 
 resource "aws_route_table" "private_route_table" {
