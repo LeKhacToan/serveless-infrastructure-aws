@@ -1,12 +1,12 @@
-resource "aws_vpc" "vpc" {
+resource "aws_vpc" "pro_vpc" {
   cidr_block = "10.0.0.0/16"
   tags = {
     Name = "production vpc"
   }
 }
 
-resource "aws_subnet" "public-subnet" {
-  vpc_id     = aws_vpc.vpc.id
+resource "aws_subnet" "public_sn" {
+  vpc_id     = aws_vpc.pro_vpc.id
   cidr_block = "10.0.0.0/24"
 
   tags = {
@@ -14,8 +14,8 @@ resource "aws_subnet" "public-subnet" {
   }
 }
 
-resource "aws_subnet" "private-subnet-1" {
-  vpc_id            = aws_vpc.vpc.id
+resource "aws_subnet" "private_sn_1" {
+  vpc_id            = aws_vpc.pro_vpc.id
   cidr_block        = "10.0.1.0/24"
   availability_zone = "us-west-2a"
 
@@ -24,8 +24,8 @@ resource "aws_subnet" "private-subnet-1" {
   }
 }
 
-resource "aws_subnet" "private-subnet-2" {
-  vpc_id            = aws_vpc.vpc.id
+resource "aws_subnet" "private_sn_2" {
+  vpc_id            = aws_vpc.pro_vpc.id
   cidr_block        = "10.0.2.0/24"
   availability_zone = "us-west-2b"
 
@@ -34,21 +34,21 @@ resource "aws_subnet" "private-subnet-2" {
   }
 }
 
-resource "aws_db_subnet_group" "db-subnet-group" {
+resource "aws_db_subnet_group" "db_sn_group" {
   name       = "db subnet group"
-  subnet_ids = [aws_subnet.private-subnet-1.id, aws_subnet.private-subnet-2.id]
+  subnet_ids = [aws_subnet.private_sn_1.id, aws_subnet.private_sn_2.id]
   tags = {
-    Name = "db subnet group"
+    Name = "database subnet group"
   }
 }
 
 resource "aws_elasticache_subnet_group" "elasticache_sg" {
   name       = "elasticache subnet group"
-  subnet_ids = [aws_subnet.private-subnet-1.id, aws_subnet.private-subnet-2.id]
+  subnet_ids = [aws_subnet.private_sn_1.id, aws_subnet.private_sn_2.id]
 }
 
-resource "aws_internet_gateway" "internet-gw" {
-  vpc_id = aws_vpc.vpc.id
+resource "aws_internet_gateway" "internet_gw" {
+  vpc_id = aws_vpc.pro_vpc.id
 
   tags = {
     Name = "internet gateway"
@@ -56,29 +56,34 @@ resource "aws_internet_gateway" "internet-gw" {
 }
 
 resource "aws_route_table" "route_table" {
-  vpc_id = aws_vpc.vpc.id
+  vpc_id = aws_vpc.pro_vpc.id
 
   route {
     cidr_block = "0.0.0.0/0"
-    gateway_id = aws_internet_gateway.internet-gw.id
+    gateway_id = aws_internet_gateway.internet_gw.id
   }
 
   tags = {
-    Name = "example"
+    Name = "Route table for vpc"
   }
 }
 
 # Associate subnet with route table
 resource "aws_route_table_association" "a" {
-  subnet_id      = aws_subnet.private-subnet-1.id
+  subnet_id      = aws_subnet.private_sn_1.id
+  route_table_id = aws_route_table.route_table.id
+}
+
+resource "aws_route_table_association" "b" {
+  subnet_id      = aws_subnet.private_sn_2.id
   route_table_id = aws_route_table.route_table.id
 }
 
 # create security group
-resource "aws_security_group" "redis-vpc-group" {
+resource "aws_security_group" "redis_vpc_group" {
   name        = "allow_tls"
   description = "Allow TLS inbound traffic"
-  vpc_id      = aws_vpc.vpc.id
+  vpc_id      = aws_vpc.pro_vpc.id
 
   ingress {
     description      = "Custom TCP"
