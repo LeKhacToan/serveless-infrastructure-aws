@@ -34,11 +34,20 @@ resource "aws_subnet" "private_sn_2" {
   }
 }
 
+
+resource "aws_nat_gateway" "nat_gw" {
+  subnet_id = aws_subnet.public_sn.id
+
+  tags = {
+    Name = "Nat gateway"
+  }
+}
+
 resource "aws_db_subnet_group" "db_sn_group" {
   name       = "db subnet group"
   subnet_ids = [aws_subnet.private_sn_1.id, aws_subnet.private_sn_2.id]
   tags = {
-    Name = "database subnet group"
+    Name = "Database subnet group"
   }
 }
 
@@ -51,7 +60,7 @@ resource "aws_internet_gateway" "internet_gw" {
   vpc_id = aws_vpc.pro_vpc.id
 
   tags = {
-    Name = "internet gateway"
+    Name = "Internet gateway"
   }
 }
 
