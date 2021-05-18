@@ -1,11 +1,10 @@
-# s3 bucket
-resource "aws_s3_bucket" "s3" {
-  bucket = "my-tf-test-bucket"
+# S3 Bucket
+resource "aws_s3_bucket" "s3-bucket-terrarom" {
+  bucket = "s3-bucket-terrarom"
   acl    = "public-read"
 
   tags = {
-    Name        = "My bucket"
-    Environment = "Dev"
+    Name = "S3 website hosting"
   }
   policy = <<EOF
 {
@@ -18,7 +17,7 @@ resource "aws_s3_bucket" "s3" {
         "AWS": "*"
       },
       "Action": "s3:GetObject",
-      "Resource": "arn:aws:s3:::s3-test/*"
+      "Resource": "arn:aws:s3:::s3-bucket-terrarom/*"
     }
   ]
 }
@@ -33,19 +32,17 @@ EOF
 # cloulfront
 resource "aws_cloudfront_distribution" "s3_distribution" {
   origin {
-    domain_name = "${aws_s3_bucket.website.bucket}.s3.amazonaws.com"
-    origin_id   = "website"
+    domain_name = "${aws_s3_bucket.s3-bucket-terrarom.bucket}.s3.amazonaws.com"
+    origin_id   = "S3-s3-bucket-terrarom"
   }
 
   enabled             = true
   is_ipv6_enabled     = true
-  comment             = "Managed by Terraform"
+  comment             = "Cloudfront for s3"
   default_root_object = "index.html"
 
-  aliases = ["${var.domain_name}"]
-
   default_cache_behavior {
-    allowed_methods  = ["DELETE", "GET", "HEAD", "OPTIONS", "PATCH", "POST", "PUT"]
+    allowed_methods  = ["GET", "HEAD"]
     cached_methods   = ["GET", "HEAD"]
     target_origin_id = "website"
 
@@ -59,11 +56,11 @@ resource "aws_cloudfront_distribution" "s3_distribution" {
 
     viewer_protocol_policy = "allow-all"
     min_ttl                = 0
-    default_ttl            = 3600
-    max_ttl                = 86400
+    default_ttl            = 0
+    max_ttl                = 0
   }
 
-  price_class = "PriceClass_100"
+  price_class = "PriceClass_All"
 
   restrictions {
     geo_restriction {
@@ -71,11 +68,11 @@ resource "aws_cloudfront_distribution" "s3_distribution" {
     }
   }
 
-  tags {
-    Environment = "production"
-  }
-
   viewer_certificate {
     cloudfront_default_certificate = true
+  }
+
+  tags {
+    Environment = "production"
   }
 }
