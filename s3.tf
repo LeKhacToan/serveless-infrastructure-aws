@@ -29,11 +29,16 @@ EOF
   }
 }
 
+locals {
+  s3_origin_id = "myS3Origin"
+}
+
+
 # cloulfront
 resource "aws_cloudfront_distribution" "s3_distribution" {
   origin {
-    domain_name = "${aws_s3_bucket.s3-bucket-terrarom.bucket}.s3.amazonaws.com"
-    origin_id   = "S3-s3-bucket-terrarom"
+    domain_name = aws_s3_bucket.s3-bucket-terrarom.bucket_regional_domain_name
+    origin_id   = local.s3_origin_id
   }
 
   enabled             = true
@@ -58,6 +63,63 @@ resource "aws_cloudfront_distribution" "s3_distribution" {
     min_ttl                = 0
     default_ttl            = 0
     max_ttl                = 0
+  }
+
+  ordered_cache_behavior {
+    path_pattern     = "/"
+    allowed_methods  = ["GET", "HEAD"]
+    cached_methods   = ["GET", "HEAD"]
+    target_origin_id = local.s3_origin_id
+
+    forwarded_values {
+      query_string = false
+
+      cookies {
+        forward = "none"
+      }
+    }
+
+    min_ttl                = 0
+    default_ttl            = 0
+    max_ttl                = 0
+    compress               = false
+    viewer_protocol_policy = "redirect-to-https"
+  }
+
+  ordered_cache_behavior {
+    path_pattern     = "index.html"
+    allowed_methods  = ["GET", "HEAD"]
+    cached_methods   = ["GET", "HEAD"]
+    target_origin_id = local.s3_origin_id
+
+    forwarded_values {
+      query_string = false
+
+      cookies {
+        forward = "none"
+      }
+    }
+
+    min_ttl                = 0
+    default_ttl            = 0
+    max_ttl                = 0
+    compress               = false
+    viewer_protocol_policy = "redirect-to-https"
+  }
+
+
+  custom_error_response {
+    error_code            = 403
+    response_code         = 200
+    response_page_path = "/index.html"
+    error_caching_min_ttl = 10
+  }
+
+    custom_error_response {
+    error_code            = 404
+    response_code         = 200
+    response_page_path = "/index.html"
+    error_caching_min_ttl = 10
   }
 
   price_class = "PriceClass_All"
