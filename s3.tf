@@ -1,6 +1,6 @@
 # S3 Bucket
 resource "aws_s3_bucket" "s3-bucket-terrarom" {
-  bucket = "s3-bucket-terrarom"
+  bucket = "${var.project_name}_bucket"
   acl    = "public-read"
 
   tags = {
@@ -17,7 +17,7 @@ resource "aws_s3_bucket" "s3-bucket-terrarom" {
         "AWS": "*"
       },
       "Action": "s3:GetObject",
-      "Resource": "arn:aws:s3:::s3-bucket-terrarom/*"
+      "Resource": "arn:aws:s3:::${var.project_name}_bucket/*"
     }
   ]
 }

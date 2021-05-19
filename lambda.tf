@@ -1,6 +1,6 @@
 # ECR
 resource "aws_ecr_repository" "foo" {
-  name                 = "bar"
+  name = var.project_name
 
   image_scanning_configuration {
     scan_on_push = true
@@ -9,7 +9,7 @@ resource "aws_ecr_repository" "foo" {
 
 # Lambda
 resource "aws_iam_role" "iam_for_lambda" {
-  name = "iam_for_lambda"
+  name = "${var.project_name}_iam_for_lambda"
 
   assume_role_policy = <<EOF
 {
@@ -28,8 +28,8 @@ resource "aws_iam_role" "iam_for_lambda" {
 EOF
 }
 
-resource "aws_lambda_function" "test_lambda" {
-  function_name = "lambda_function_name"
+resource "aws_lambda_function" "lambda" {
+  function_name = "${var.project_name}_api"
   role          = aws_iam_role.iam_for_lambda.arn
 
   runtime = "python3.8"
@@ -40,7 +40,7 @@ resource "aws_lambda_function" "test_lambda" {
 
   vpc_config {
     subnet_ids         = [aws_subnet.private_sn_1.id, aws_subnet.private_sn_2.id]
-    security_group_ids = [aws_security_group.sg_for_lambda.id]
+    security_group_ids = [aws_security_group.lambda_sg.id]
   }
 }
 
@@ -49,7 +49,7 @@ variable "myregion" {}
 
 variable "accountId" {}
 resource "aws_api_gateway_rest_api" "api" {
-  name = "myapi"
+  name = "${var.project_name}_api"
 }
 
 resource "aws_api_gateway_resource" "resource" {
@@ -71,7 +71,7 @@ resource "aws_api_gateway_integration" "integration" {
   http_method             = aws_api_gateway_method.method.http_method
   integration_http_method = "ANY"
   type                    = "AWS_PROXY"
-  uri                     = aws_lambda_function.test_lambda.invoke_arn
+  uri                     = aws_lambda_function.lambda.invoke_arn
 }
 
 # Lambda
