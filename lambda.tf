@@ -1,5 +1,5 @@
 # ECR
-resource "aws_ecr_repository" "foo" {
+resource "aws_ecr_repository" "repository" {
   name = var.project_name
 
   image_scanning_configuration {
@@ -7,7 +7,7 @@ resource "aws_ecr_repository" "foo" {
   }
 }
 
-# Lambda
+# Lambda function
 resource "aws_iam_role" "iam_for_lambda" {
   name = "${var.project_name}_iam_for_lambda"
 
@@ -45,42 +45,72 @@ resource "aws_lambda_function" "lambda" {
 }
 
 # API gateway
-variable "myregion" {}
-
-variable "accountId" {}
-resource "aws_api_gateway_rest_api" "api" {
+resource "aws_api_gateway_rest_api" "lambda_api" {
   name = "${var.project_name}_api"
 }
 
-resource "aws_api_gateway_resource" "resource" {
-  path_part   = "resource"
-  parent_id   = aws_api_gateway_rest_api.api.root_resource_id
-  rest_api_id = aws_api_gateway_rest_api.api.id
+resource "aws_api_gateway_resource" "proxy" {
+  path_part   = "{proxy+}"
+  parent_id   = aws_api_gateway_rest_api.lambda_api.root_resource_id
+  rest_api_id = aws_api_gateway_rest_api.lambda_api.id
 }
 
-resource "aws_api_gateway_method" "method" {
-  rest_api_id   = aws_api_gateway_rest_api.api.id
-  resource_id   = aws_api_gateway_resource.resource.id
+resource "aws_api_gateway_method" "proxy_method" {
+  rest_api_id   = aws_api_gateway_rest_api.lambda_api.id
+  resource_id   = aws_api_gateway_resource.proxy.id
   http_method   = "ANY"
   authorization = "NONE"
 }
 
-resource "aws_api_gateway_integration" "integration" {
-  rest_api_id             = aws_api_gateway_rest_api.api.id
-  resource_id             = aws_api_gateway_resource.resource.id
-  http_method             = aws_api_gateway_method.method.http_method
+resource "aws_api_gateway_integration" "lambda" {
+  rest_api_id             = aws_api_gateway_rest_api.lambda_api.id
+  resource_id             = aws_api_gateway_resource.proxy.id
+  http_method             = aws_api_gateway_method.proxy_method.http_method
+
   integration_http_method = "ANY"
   type                    = "AWS_PROXY"
   uri                     = aws_lambda_function.lambda.invoke_arn
 }
 
-# Lambda
+resource "aws_api_gateway_method" "proxy_root" {
+   rest_api_id   = aws_api_gateway_rest_api.lambda_api.id
+   resource_id   = aws_api_gateway_rest_api.lambda_api.root_resource_id
+   http_method   = "ANY"
+   authorization = "NONE"
+}
+
+resource "aws_api_gateway_integration" "lambda_root" {
+   rest_api_id = aws_api_gateway_rest_api.lambda_api.id
+   resource_id = aws_api_gateway_method.proxy_root.resource_id
+   http_method = aws_api_gateway_method.proxy_root.http_method
+
+   integration_http_method = "POST"
+   type                    = "AWS_PROXY"
+   uri                     = aws_lambda_function.lambda.invoke_arn
+}
+
+resource "aws_api_gateway_deployment" "deploy" {
+   depends_on = [
+     aws_api_gateway_integration.lambda,
+     aws_api_gateway_integration.lambda_root,
+   ]
+
+   rest_api_id = aws_api_gateway_rest_api.lambda_api.id
+   stage_name  = "dev"
+}
+
 resource "aws_lambda_permission" "apigw_lambda" {
   statement_id  = "AllowExecutionFromAPIGateway"
   action        = "lambda:InvokeFunction"
   function_name = aws_lambda_function.lambda.function_name
   principal     = "apigateway.amazonaws.com"
 
-  # More: http://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-control-access-using-iam-policies-to-invoke-api.html
-  source_arn = "arn:aws:execute-api:${var.myregion}:${var.accountId}:${aws_api_gateway_rest_api.api.id}/*/${aws_api_gateway_method.method.http_method}${aws_api_gateway_resource.resource.path}"
+  # The "/*/*" portion grants access from any method on any resource
+  # within the API Gateway REST API
+  source_arn = "${aws_api_gateway_rest_api.apiLambda.execution_arn}/*/*"
 }
+
+output "base_url" {
+  value = aws_api_gateway_deployment.apideploy.invoke_url
+}
+
