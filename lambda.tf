@@ -1,11 +1,11 @@
 # ECR
-resource "aws_ecr_repository" "repository" {
-  name = var.project_name
+# resource "aws_ecr_repository" "repository" {
+#   name = var.project_name
 
-  image_scanning_configuration {
-    scan_on_push = true
-  }
-}
+#   image_scanning_configuration {
+#     scan_on_push = true
+#   }
+# }
 
 # Lambda function
 resource "aws_iam_role" "iam_for_lambda" {
@@ -28,14 +28,23 @@ resource "aws_iam_role" "iam_for_lambda" {
 EOF
 }
 
+resource "aws_iam_role_policy_attachment" "lamba_exec_role_eni" {
+  role = "${aws_iam_role.iam_for_lambda.name}"
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole"
+}
+
 resource "aws_lambda_function" "lambda" {
   function_name = "${var.project_name}_api"
   role          = aws_iam_role.iam_for_lambda.arn
+  depends_on = [aws_iam_role_policy_attachment.lamba_exec_role_eni]
+  package_type = "Image"
 
-  runtime = "python3.8"
+  image_uri = "069217422023.dkr.ecr.us-west-2.amazonaws.com/serverless-test:test-image"
 
-  image_config {
-
+  environment {
+    variables = {
+      foo = "bar"
+    }
   }
 
   vpc_config {
@@ -107,10 +116,10 @@ resource "aws_lambda_permission" "apigw_lambda" {
 
   # The "/*/*" portion grants access from any method on any resource
   # within the API Gateway REST API
-  source_arn = "${aws_api_gateway_rest_api.apiLambda.execution_arn}/*/*"
+  source_arn = "${aws_api_gateway_rest_api.lambda_api.execution_arn}/*/*"
 }
 
 output "base_url" {
-  value = aws_api_gateway_deployment.apideploy.invoke_url
+  value = aws_api_gateway_deployment.deploy.invoke_url
 }
 

@@ -109,7 +109,7 @@ resource "aws_route_table_association" "association_public" {
   route_table_id = aws_route_table.public_route_table.id
 }
 
-# create security group
+# Security group
 resource "aws_security_group" "redis_sg" {
   name        = "Redis security group"
   description = "Allow TLS inbound traffic"
@@ -161,5 +161,32 @@ resource "aws_security_group" "postgres_sg" {
 
   tags = {
     Name = "Database security group"
+  }
+}
+
+resource "aws_security_group" "lambda_sg" {
+  name        = "Lambda security group"
+  description = "Allow TLS inbound traffic"
+  vpc_id      = aws_vpc.pro_vpc.id
+
+  ingress {
+    description      = "All"
+    from_port        = 0
+    to_port          = 0
+    protocol         = "-1"
+    cidr_blocks      = ["0.0.0.0/0"]
+    ipv6_cidr_blocks = ["::/0"]
+  }
+
+  egress {
+    from_port        = 0
+    to_port          = 0
+    protocol         = "-1"
+    cidr_blocks      = ["0.0.0.0/0"]
+    ipv6_cidr_blocks = ["::/0"]
+  }
+
+  tags = {
+    Name = "Lambda security group"
   }
 }
