@@ -30,7 +30,7 @@ resource "aws_lambda_function" "lambda" {
   depends_on    = [aws_iam_role_policy_attachment.lamba_exec_role_eni]
   package_type  = "Image"
 
-  image_uri = "069217422023.dkr.ecr.us-west-2.amazonaws.com/serverless-test:test-image"
+  image_uri = "069217422023.dkr.ecr.us-west-2.amazonaws.com/serverless-test:test-1"
 
   environment {
     variables = {
@@ -128,8 +128,8 @@ resource "aws_api_gateway_integration_response" "response_proxy_root_integration
 
 resource "aws_api_gateway_deployment" "deploy" {
   depends_on = [
-    aws_api_gateway_integration.lambda_root,
     aws_api_gateway_integration.lambda,
+    aws_api_gateway_integration.lambda_root,
   ]
 
   rest_api_id = aws_api_gateway_rest_api.lambda_api.id
@@ -137,7 +137,6 @@ resource "aws_api_gateway_deployment" "deploy" {
 }
 
 resource "aws_lambda_permission" "apigw_lambda" {
-  statement_id  = "AllowExecutionFromAPIGateway"
   action        = "lambda:InvokeFunction"
   function_name = aws_lambda_function.lambda.function_name
   principal     = "apigateway.amazonaws.com"
@@ -145,6 +144,16 @@ resource "aws_lambda_permission" "apigw_lambda" {
   # The "/*/*/*" portion grants access from any method on any resource
   # within the API Gateway REST API
   source_arn = "${aws_api_gateway_rest_api.lambda_api.execution_arn}/*/*/*"
+}
+
+resource "aws_lambda_permission" "apigw_lambda_2" {
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.lambda.function_name
+  principal     = "apigateway.amazonaws.com"
+
+  # The "/*/*/" portion grants access from any method on any resource
+  # within the API Gateway REST API
+  source_arn = "${aws_api_gateway_rest_api.lambda_api.execution_arn}/*/*/"
 }
 
 output "base_url" {
