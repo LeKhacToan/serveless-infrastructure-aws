@@ -47,6 +47,10 @@ resource "aws_lambda_function" "lambda" {
 # API gateway
 resource "aws_api_gateway_rest_api" "lambda_api" {
   name = "${var.project_name}_api"
+
+  endpoint_configuration {
+    types = ["REGIONAL"]
+  }
 }
 
 resource "aws_api_gateway_resource" "proxy" {
@@ -70,13 +74,6 @@ resource "aws_api_gateway_integration" "lambda" {
   integration_http_method = "ANY"
   type                    = "AWS_PROXY"
   uri                     = aws_lambda_function.lambda.invoke_arn
-}
-
-resource "aws_api_gateway_method_response" "response_proxy" {
-  rest_api_id = aws_api_gateway_rest_api.lambda_api.id
-  resource_id = aws_api_gateway_resource.proxy.id
-  http_method = aws_api_gateway_method.proxy_method.http_method
-  status_code = "200"
 }
 
 resource "aws_api_gateway_integration_response" "response_proxy_integration" {
@@ -131,8 +128,8 @@ resource "aws_api_gateway_integration_response" "response_proxy_root_integration
 
 resource "aws_api_gateway_deployment" "deploy" {
   depends_on = [
-    aws_api_gateway_integration.lambda,
     aws_api_gateway_integration.lambda_root,
+    aws_api_gateway_integration.lambda,
   ]
 
   rest_api_id = aws_api_gateway_rest_api.lambda_api.id
@@ -145,9 +142,9 @@ resource "aws_lambda_permission" "apigw_lambda" {
   function_name = aws_lambda_function.lambda.function_name
   principal     = "apigateway.amazonaws.com"
 
-  # The "/*/*" portion grants access from any method on any resource
+  # The "/*/*/*" portion grants access from any method on any resource
   # within the API Gateway REST API
-  source_arn = "${aws_api_gateway_rest_api.lambda_api.execution_arn}/*/*"
+  source_arn = "${aws_api_gateway_rest_api.lambda_api.execution_arn}/*/*/*"
 }
 
 output "base_url" {
