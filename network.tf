@@ -2,7 +2,7 @@ resource "aws_vpc" "pro_vpc" {
   cidr_block = "10.0.0.0/16"
   enable_dns_hostnames = true
   tags = {
-    Name = "production vpc"
+    Name = "${var.project_name} production vpc"
   }
 }
 
@@ -10,7 +10,7 @@ resource "aws_internet_gateway" "internet_gw" {
   vpc_id = aws_vpc.pro_vpc.id
 
   tags = {
-    Name = "Internet gateway"
+    Name = "${var.project_name} internet gateway"
   }
 }
 
@@ -19,7 +19,7 @@ resource "aws_subnet" "public_sn" {
   cidr_block = "10.0.0.0/24"
 
   tags = {
-    Name = "public subnet"
+    Name = "${var.project_name} public subnet"
   }
 }
 
@@ -29,7 +29,7 @@ resource "aws_subnet" "private_sn_1" {
   availability_zone = "${var.availability_zone_names[0]}"
 
   tags = {
-    Name = "private subnet 1"
+    Name = "${var.project_name} private subnet 1"
   }
 }
 
@@ -39,7 +39,7 @@ resource "aws_subnet" "private_sn_2" {
   availability_zone = "${var.availability_zone_names[1]}"
 
   tags = {
-    Name = "private subnet 2"
+    Name = "${var.project_name} private subnet 2"
   }
 }
 
@@ -51,15 +51,15 @@ resource "aws_nat_gateway" "nat_gw" {
   subnet_id = aws_subnet.public_sn.id
   allocation_id = aws_eip.nat.id
   tags = {
-    Name = "Nat gateway"
+    Name = "${var.project_name} nat gateway"
   }
 }
 
 resource "aws_db_subnet_group" "db_sn_group" {
   name       = "db subnet group"
-  subnet_ids = [aws_subnet.private_sn_1.id, aws_subnet.private_sn_2.id]
+  subnet_ids = [aws_subnet.private_sn_1.id, aws_subnet.private_sn_2.id, aws_subnet.public_sn.id]
   tags = {
-    Name = "Database subnet group"
+    Name = "${var.project_name} database subnet group"
   }
 }
 
@@ -77,7 +77,7 @@ resource "aws_route_table" "private_route_table" {
   }
 
   tags = {
-    Name = "Private route table for vpc"
+    Name = "${var.project_name} private route table for vpc"
   }
 }
 
@@ -89,7 +89,7 @@ resource "aws_route_table" "public_route_table" {
   }
 
   tags = {
-    Name = "Public route table for vpc"
+    Name = "${var.project_name} public route table for vpc"
   }
 }
 
@@ -133,7 +133,7 @@ resource "aws_security_group" "redis_sg" {
   }
 
   tags = {
-    Name = "Redis security group"
+    Name = "${var.project_name} redis security group"
   }
 }
 
@@ -160,7 +160,7 @@ resource "aws_security_group" "postgres_sg" {
   }
 
   tags = {
-    Name = "Database security group"
+    Name = "${var.project_name} database security group"
   }
 }
 
@@ -187,6 +187,6 @@ resource "aws_security_group" "lambda_sg" {
   }
 
   tags = {
-    Name = "Lambda security group"
+    Name = "${var.project_name} lambda security group"
   }
 }
