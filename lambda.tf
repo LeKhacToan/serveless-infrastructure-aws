@@ -30,7 +30,7 @@ resource "aws_lambda_function" "lambda" {
   depends_on    = [aws_iam_role_policy_attachment.lamba_exec_role_eni]
   package_type  = "Image"
 
-  image_uri = "069217422023.dkr.ecr.us-west-2.amazonaws.com/serverless-test:test-1"
+  image_uri = var.image_uri
 
   environment {
     variables = {

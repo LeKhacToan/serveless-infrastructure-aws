@@ -26,7 +26,7 @@ resource "aws_subnet" "public_sn" {
 resource "aws_subnet" "private_sn_1" {
   vpc_id            = aws_vpc.pro_vpc.id
   cidr_block        = "10.0.1.0/24"
-  availability_zone = "us-west-2a"
+  availability_zone = "${var.availability_zone_names[0]}"
 
   tags = {
     Name = "private subnet 1"
@@ -36,7 +36,7 @@ resource "aws_subnet" "private_sn_1" {
 resource "aws_subnet" "private_sn_2" {
   vpc_id            = aws_vpc.pro_vpc.id
   cidr_block        = "10.0.2.0/24"
-  availability_zone = "us-west-2b"
+  availability_zone = "${var.availability_zone_names[1]}"
 
   tags = {
     Name = "private subnet 2"

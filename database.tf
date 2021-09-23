@@ -3,8 +3,8 @@ resource "aws_db_instance" "postgres_db" {
   engine                 = "postgres"
   engine_version         = "11.10"
   instance_class         = "db.t3.micro"
-  identifier             = "mydb1"
-  name                   = "mydb1"
+  identifier             = "${var.project_name}_db"
+  name                   = "${var.project_name}_db"
   username               = "postgres"
   password               = "postgres"
   db_subnet_group_name   = aws_db_subnet_group.db_sn_group.name
